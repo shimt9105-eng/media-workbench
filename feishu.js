@@ -1,6 +1,7 @@
 const FEISHU_BASE_URL = "https://open.feishu.cn/open-apis";
 
 const FIELD_TYPE_TEXT = 1;
+let tokenCache = null;
 
 const MONTHLY_FIELDS = [
   "标题",
@@ -54,10 +55,14 @@ async function feishuFetch(path, options = {}) {
   if (!response.ok || data.code !== 0) {
     throw new Error(data.msg || data.error?.message || `飞书 API 调用失败：${response.status}`);
   }
-  return data.data || {};
+  return data.data || data;
 }
 
 async function getTenantAccessToken() {
+  if (tokenCache && tokenCache.expiresAt > Date.now() + 60 * 1000) {
+    return tokenCache.token;
+  }
+
   const data = await feishuFetch("/auth/v3/tenant_access_token/internal", {
     method: "POST",
     body: JSON.stringify({
@@ -65,7 +70,13 @@ async function getTenantAccessToken() {
       app_secret: process.env.FEISHU_APP_SECRET,
     }),
   });
-  return data.tenant_access_token;
+  if (!data.tenant_access_token) throw new Error("飞书没有返回 tenant_access_token");
+
+  tokenCache = {
+    token: data.tenant_access_token,
+    expiresAt: Date.now() + Number(data.expire || 7200) * 1000,
+  };
+  return tokenCache.token;
 }
 
 async function listTables(appToken, tenantAccessToken) {
