@@ -1,0 +1,9 @@
+.env
+.git
+.DS_Store
+node_modules
+data
+uploads
+.hf_transcribe
+*.log
+preview*.png
