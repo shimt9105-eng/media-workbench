@@ -1,0 +1,12 @@
+{
+  "name": "media-keyword-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check app.js"
+  },
+  "dependencies": {
+    "tesseract.js": "^7.0.0"
+  }
+}

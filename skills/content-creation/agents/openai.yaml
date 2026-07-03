@@ -1,0 +1,16 @@
+interface:
+  display_name: "内容创作分析"
+  short_description: "把作品、评论区、搜索词素材分析成搜索词、选题、视频拆解、平台脚本和营销风险提示。"
+  default_prompt: "分析我输入的新媒体作品、评论区、搜索词和补充文字，输出核心词/长尾词、备选选题、视频亮点拆解、多平台脚本和营销风险扫描说明。"
+  analysis_type: "content_creation"
+  output_fields:
+    - key: "keywords"
+      label: "1. 提取核心词、长尾词"
+    - key: "topics"
+      label: "2. 备选选题与用户需求点"
+    - key: "video_breakdown"
+      label: "3. 视频亮点拆解"
+    - key: "platform_scripts"
+      label: "4. 多平台备选脚本"
+    - key: "marketing_risk_scan"
+      label: "5. 营销风险扫描说明"

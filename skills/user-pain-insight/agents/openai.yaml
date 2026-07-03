@@ -1,0 +1,16 @@
+interface:
+  display_name: "用户痛点线索提取"
+  short_description: "从截图、图文、视频备注和粘贴文字中提取痛点原话、用户画像和昵称/平台线索。"
+  default_prompt: "分析我输入的截图、图文、视频备注和补充文字，输出用户痛点与真实原话、画像标签、昵称/平台建联线索、标题和复盘摘要。"
+  analysis_type: "user_pain"
+  output_fields:
+    - key: "pain_points"
+      label: "1. 用户痛点与真实原话"
+    - key: "user_profiles"
+      label: "2. 用户画像标签"
+    - key: "contact_leads"
+      label: "3. 昵称 / 平台 / 建联线索"
+    - key: "title"
+      label: "4. 本次材料标题"
+    - key: "summary"
+      label: "5. 周期复盘摘要"

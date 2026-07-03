@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>素材分析工作台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <div>
+          <p>素材分析工作台</p>
+          <h1>把文字、截图和录屏，沉淀成可复盘的内容资产和用户洞察。</h1>
+        </div>
+        <div class="status" id="apiStatus">检查 DeepSeek 配置中...</div>
+      </header>
+
+      <section class="shell">
+        <section class="input-card">
+          <div class="tabs" role="tablist">
+            <button class="tab is-active" data-input-mode="text">文字输入</button>
+            <button class="tab" data-input-mode="image">图片输入</button>
+            <button class="tab" data-input-mode="video">视频输入</button>
+          </div>
+
+          <label class="field" id="textPanel">
+            <span>粘贴文字</span>
+            <textarea id="textInput" placeholder="粘贴你看到的内容、评论区原话、提问文字、私信内容、搜索词或自己的观察。"></textarea>
+          </label>
+
+          <div class="upload-zone is-hidden" id="uploadZone">
+            <input id="fileInput" type="file" multiple accept=".mov,video/quicktime" />
+            <strong id="uploadTitle">粘贴截图</strong>
+            <span id="uploadHint">复制截图后按 Cmd+V；图片会先 OCR，再交给 DeepSeek 分析。</span>
+          </div>
+
+          <div class="file-list" id="fileList"></div>
+
+          <div class="submit-row">
+            <label class="field compact">
+              <span>选择 skill</span>
+              <select id="skillSelect"></select>
+            </label>
+            <button class="secondary" id="clearBtn">清空</button>
+            <button class="primary" id="submitBtn">提交分析</button>
+          </div>
+        </section>
+
+      </section>
+
+      <section class="result-grid">
+        <section class="result-card wide">
+          <div class="card-head">
+            <h2>分析结果</h2>
+            <span id="resultMeta">等待提交</span>
+          </div>
+          <div class="empty" id="emptyState">选择输入方式和分析 skill，提交后写入 SQLite。</div>
+          <div class="result-fields" id="resultFields"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
