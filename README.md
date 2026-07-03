@@ -73,3 +73,20 @@ BSr5bPvTPaL5LdsBV9vcq1zen4e
 ## 合规原则
 
 只处理你自己拥有、授权、手动摘录或公开工具导出的内容。不要用它配合爬虫、模拟浏览器或绕过平台风控。后续私信建联时避免发送骚扰、误导或侵犯隐私的内容。
+
+## Docker 部署
+
+项目已包含：
+
+- `Dockerfile`
+- `requirements.txt`
+- `.dockerignore`
+
+本地测试镜像：
+
+```bash
+docker build -t media-keyword-workbench .
+docker run --env-file .env -p 5188:10000 media-keyword-workbench
+```
+
+部署到 Render 时选择 Docker Web Service，并在 Render 环境变量里配置 `.env.example` 中的变量。不要把本地 `.env` 提交到 GitHub。

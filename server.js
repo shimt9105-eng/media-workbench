@@ -6,14 +6,9 @@ const { isFeishuConfigured, writeAnalysisToFeishu } = require("./feishu");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5177);
-const pythonBin =
-  process.env.PYTHON_BIN ||
-  "/Users/shimengting/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3";
-const transcribePython =
-  process.env.TRANSCRIBE_PYTHON ||
-  "/Users/shimengting/Documents/AI PM/.venv_transcribe/bin/python";
-const transcribeCacheDir =
-  process.env.TRANSCRIBE_CACHE_DIR || "/Users/shimengting/Documents/AI PM/.hf_transcribe";
+const pythonBin = process.env.PYTHON_BIN || "python3";
+const transcribePython = process.env.TRANSCRIBE_PYTHON || pythonBin;
+const transcribeCacheDir = process.env.TRANSCRIBE_CACHE_DIR || path.join(root, ".hf_transcribe");
 const transcribeModel = process.env.TRANSCRIBE_MODEL || "Systran/faster-whisper-small";
 
 loadDotEnv();
