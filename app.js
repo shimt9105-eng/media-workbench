@@ -1,6 +1,7 @@
 const state = {
   inputMode: "text",
   inputType: "文字输入",
+  textInput: "",
   files: [],
   skills: [],
   selectedSkill: null,
@@ -37,6 +38,21 @@ async function addFiles(fileList) {
 }
 
 function renderFiles() {
+  if (state.inputMode === "text" && state.textInput) {
+    $("#fileList").innerHTML = `<div class="file-item">
+      <div>
+        <strong>已粘贴文字</strong>
+        <small>${escapeHtml(state.textInput.slice(0, 80))}</small>
+      </div>
+      <button data-clear-text="true">移除</button>
+    </div>`;
+    $("[data-clear-text]").addEventListener("click", () => {
+      state.textInput = "";
+      renderFiles();
+    });
+    return;
+  }
+
   $("#fileList").innerHTML = state.files
     .map(
       (item) => `<div class="file-item">
@@ -82,7 +98,7 @@ async function loadStatus() {
 }
 
 async function submitAnalysis() {
-  const text = $("#textInput").value.trim();
+  const text = state.textInput.trim();
   if (state.inputMode === "text" && !text) {
     alert("先粘贴文字。");
     return;
@@ -231,13 +247,22 @@ function formatValue(value) {
 }
 
 function clearAll() {
-  $("#textInput").value = "";
   $("#fileInput").value = "";
+  state.textInput = "";
   state.files = [];
   renderFiles();
 }
 
-function addClipboardImages(event) {
+function handlePaste(event) {
+  if (state.inputMode === "text") {
+    const text = event.clipboardData?.getData("text/plain")?.trim() || "";
+    if (!text) return;
+    event.preventDefault();
+    state.textInput = text;
+    renderFiles();
+    return;
+  }
+
   if (state.inputMode !== "image") return;
   const files = [];
   for (const item of event.clipboardData?.items || []) {
@@ -264,6 +289,7 @@ function setInputMode(mode) {
   state.inputMode = mode;
   state.inputType = mode === "text" ? "文字输入" : mode === "image" ? "图片输入" : "视频输入";
   state.files = [];
+  state.textInput = "";
   $("#fileInput").value = "";
   renderFiles();
 
@@ -271,23 +297,15 @@ function setInputMode(mode) {
     button.classList.toggle("is-active", button.dataset.inputMode === mode);
   });
 
-  $("#textPanel").classList.toggle("is-hidden", mode !== "text");
-  $("#uploadZone").classList.toggle("is-hidden", mode === "text");
-  $("#textInput").disabled = mode !== "text";
+  $("#videoUploadBtn").classList.toggle("is-hidden", mode !== "video");
+  $("#fileInput").disabled = mode !== "video";
 
   if (mode === "image") {
-    $("#fileInput").disabled = true;
     $("#fileInput").accept = "";
-    $("#uploadZone").classList.add("paste-only");
-    $("#uploadTitle").textContent = "粘贴截图";
-    $("#uploadHint").textContent = "复制截图后按 Cmd+V；图片会先 OCR，再交给 DeepSeek 分析。";
   }
   if (mode === "video") {
     $("#fileInput").disabled = false;
     $("#fileInput").accept = ".mov,video/quicktime";
-    $("#uploadZone").classList.remove("paste-only");
-    $("#uploadTitle").textContent = "上传苹果录屏 .mov";
-    $("#uploadHint").textContent = "点击选择或拖拽 .mov 文件；系统会提取音频并转文字，再交给 DeepSeek 分析。";
   }
 }
 
@@ -307,12 +325,8 @@ function initEvents() {
     state.selectedSkill = getSelectedSkill();
   });
   $("#fileInput").addEventListener("change", (event) => addFiles(event.target.files));
-  document.addEventListener("paste", addClipboardImages);
-  $("#uploadZone").addEventListener("dragover", (event) => event.preventDefault());
-  $("#uploadZone").addEventListener("drop", (event) => {
-    event.preventDefault();
-    addFiles(event.dataTransfer.files);
-  });
+  document.addEventListener("paste", handlePaste);
+  $("#videoUploadBtn").addEventListener("click", () => $("#fileInput").click());
   $("#submitBtn").addEventListener("click", submitAnalysis);
   $("#clearBtn").addEventListener("click", clearAll);
 }

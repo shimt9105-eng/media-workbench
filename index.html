@@ -24,16 +24,7 @@
             <button class="tab" data-input-mode="video">视频输入</button>
           </div>
 
-          <label class="field" id="textPanel">
-            <span>粘贴文字</span>
-            <textarea id="textInput" placeholder="粘贴你看到的内容、评论区原话、提问文字、私信内容、搜索词或自己的观察。"></textarea>
-          </label>
-
-          <div class="upload-zone is-hidden" id="uploadZone">
-            <input id="fileInput" type="file" multiple accept=".mov,video/quicktime" />
-            <strong id="uploadTitle">粘贴截图</strong>
-            <span id="uploadHint">复制截图后按 Cmd+V；图片会先 OCR，再交给 DeepSeek 分析。</span>
-          </div>
+          <input id="fileInput" type="file" multiple accept=".mov,video/quicktime" class="file-input" />
 
           <div class="file-list" id="fileList"></div>
 
@@ -42,6 +33,7 @@
               <span>选择 skill</span>
               <select id="skillSelect"></select>
             </label>
+            <button class="secondary is-hidden" id="videoUploadBtn">选择 .mov</button>
             <button class="secondary" id="clearBtn">清空</button>
             <button class="primary" id="submitBtn">提交分析</button>
           </div>
