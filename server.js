@@ -283,10 +283,14 @@ async function handleAnalyze(req, res) {
   const savedFiles = [];
   const ocrTexts = [];
 
+  console.log(`[analyze] start skill=${skill.name} input=${payload.inputType} files=${(payload.files || []).length}`);
   for (const file of payload.files || []) {
+    console.log(`[analyze] saving file name=${file.name} type=${file.type} size=${file.size}`);
     const saved = saveFile(file);
     savedFiles.push(saved);
-    ocrTexts.push(extractTextFile(saved) || (await ocrImage(saved)) || transcribeVideo(saved));
+    const extracted = extractTextFile(saved) || (await ocrImage(saved)) || transcribeVideo(saved);
+    console.log(`[analyze] extracted chars=${extracted.length}`);
+    ocrTexts.push(extracted);
   }
 
   const prompt = buildPrompt({
@@ -297,7 +301,9 @@ async function handleAnalyze(req, res) {
     ocrTexts,
   });
 
+  console.log("[analyze] calling DeepSeek");
   const output = await callDeepSeek(prompt);
+  console.log("[analyze] DeepSeek returned");
   const recordPayload = {
     analysis_type: skill.analysisType,
     input_type: payload.inputType || "作品",
@@ -311,12 +317,20 @@ async function handleAnalyze(req, res) {
     summary: output.summary || summarizeOutput(output, skill.analysisType),
   };
   const record = runDb("insert", recordPayload);
-  const feishuRecord = await writeAnalysisToFeishu({
-    ...recordPayload,
-    local_id: record.id,
-  });
+  let feishuRecord = null;
+  let feishuError = "";
 
-  sendJson(res, 200, { id: record.id, analysisType: skill.analysisType, feishuRecord, output });
+  try {
+    feishuRecord = await writeAnalysisToFeishu({
+      ...recordPayload,
+      local_id: record.id,
+    });
+  } catch (error) {
+    feishuError = error.message || "飞书写入失败";
+    console.error("[analyze] feishu write failed", error);
+  }
+
+  sendJson(res, 200, { id: record.id, analysisType: skill.analysisType, feishuRecord, feishuError, output });
 }
 
 function inferTitle(output, analysisType) {
@@ -380,6 +394,7 @@ async function route(req, res) {
 
     serveStatic(req, res);
   } catch (error) {
+    console.error("[route] request failed", error);
     sendJson(res, 500, { error: error.message || "服务器错误" });
   }
 }

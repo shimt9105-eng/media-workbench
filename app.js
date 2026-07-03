@@ -122,18 +122,30 @@ async function submitAnalysis() {
     if (!response.ok) throw new Error(result.error || "提交失败");
 
     state.currentResult = result.output;
+    const writeStatus = result.feishuError
+      ? `飞书写入失败，本地已备份 · ${result.feishuError}`
+      : `已写入飞书 ${result.feishuRecord?.tableName || ""}`;
     renderResult(
       result.output,
-      `已写入飞书 ${result.feishuRecord?.tableName || ""} · ${formatAnalysisType(result.analysisType)} #${result.id}`,
+      `${writeStatus} · ${formatAnalysisType(result.analysisType)} #${result.id}`,
       state.selectedSkill,
     );
   } catch (error) {
     $("#resultMeta").textContent = "提交失败";
-    alert(error.message);
+    renderError(error.message);
   } finally {
     $("#submitBtn").disabled = false;
     $("#submitBtn").textContent = "提交分析";
   }
+}
+
+function renderError(message) {
+  $("#emptyState").style.display = "none";
+  $("#resultFields").classList.add("is-visible");
+  $("#resultFields").innerHTML = `<article class="field-card error-card">
+    <h3>提交失败</h3>
+    <pre>${escapeHtml(message || "未知错误")}</pre>
+  </article>`;
 }
 
 function renderResult(output, meta, skill = state.selectedSkill) {
