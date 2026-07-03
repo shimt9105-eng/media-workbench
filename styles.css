@@ -338,6 +338,39 @@ select {
   background: var(--danger-soft);
 }
 
+.progress-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+}
+
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.progress-head span {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #eee9de;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: width 0.25s ease;
+}
+
 .field-card h3 {
   margin: 0 0 10px;
   font-size: 16px;

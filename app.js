@@ -94,7 +94,7 @@ async function submitAnalysis() {
 
   $("#submitBtn").disabled = true;
   $("#submitBtn").textContent = "分析中...";
-  $("#resultMeta").textContent = "正在 OCR / 调用 DeepSeek / 写入 SQLite";
+  renderProgress(8, "正在上传素材");
 
   try {
     const files = [];
@@ -120,16 +120,9 @@ async function submitAnalysis() {
 
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "提交失败");
+    if (!result.jobId) throw new Error("服务器没有返回任务 ID");
 
-    state.currentResult = result.output;
-    const writeStatus = result.feishuError
-      ? `飞书写入失败，本地已备份 · ${result.feishuError}`
-      : `已写入飞书 ${result.feishuRecord?.tableName || ""}`;
-    renderResult(
-      result.output,
-      `${writeStatus} · ${formatAnalysisType(result.analysisType)} #${result.id}`,
-      state.selectedSkill,
-    );
+    await pollJob(result.jobId);
   } catch (error) {
     $("#resultMeta").textContent = "提交失败";
     renderError(error.message);
@@ -137,6 +130,55 @@ async function submitAnalysis() {
     $("#submitBtn").disabled = false;
     $("#submitBtn").textContent = "提交分析";
   }
+}
+
+async function pollJob(jobId) {
+  while (true) {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+    const job = await response.json();
+    if (!response.ok) throw new Error(job.error || "任务查询失败");
+
+    renderProgress(job.progress || 0, job.step || "处理中");
+
+    if (job.status === "done") {
+      const result = job.result;
+      state.currentResult = result.output;
+      const writeStatus = result.feishuError
+        ? `飞书写入失败，本地已备份 · ${result.feishuError}`
+        : `已写入飞书 ${result.feishuRecord?.tableName || ""}`;
+      renderResult(
+        result.output,
+        `${writeStatus} · ${formatAnalysisType(result.analysisType)} #${result.id}`,
+        state.selectedSkill,
+      );
+      return;
+    }
+
+    if (job.status === "error") {
+      throw new Error(job.error || "任务失败");
+    }
+
+    await wait(1000);
+  }
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function renderProgress(progress, step) {
+  $("#emptyState").style.display = "none";
+  $("#resultFields").classList.add("is-visible");
+  $("#resultMeta").textContent = step;
+  $("#resultFields").innerHTML = `<article class="progress-card">
+    <div class="progress-head">
+      <strong>${escapeHtml(step)}</strong>
+      <span>${Math.max(0, Math.min(100, Math.round(progress)))}%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-bar" style="width: ${Math.max(0, Math.min(100, Number(progress) || 0))}%"></div>
+    </div>
+  </article>`;
 }
 
 function renderError(message) {
@@ -231,6 +273,7 @@ function setInputMode(mode) {
 
   $("#textPanel").classList.toggle("is-hidden", mode !== "text");
   $("#uploadZone").classList.toggle("is-hidden", mode === "text");
+  $("#textInput").disabled = mode !== "text";
 
   if (mode === "image") {
     $("#fileInput").disabled = true;

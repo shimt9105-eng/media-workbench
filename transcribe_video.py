@@ -9,7 +9,7 @@ from faster_whisper import WhisperModel
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_CACHE = ROOT.parent / ".hf_transcribe"
-DEFAULT_MODEL = "Systran/faster-whisper-small"
+DEFAULT_MODEL = "Systran/faster-whisper-tiny"
 
 
 def extract_audio(video_path: Path, audio_path: Path):
@@ -52,7 +52,7 @@ def transcribe(video_path: Path):
         segments, info = model.transcribe(
             str(audio_path),
             vad_filter=True,
-            beam_size=5,
+            beam_size=1,
             language=None,
         )
         rows = [

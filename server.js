@@ -9,7 +9,7 @@ const port = Number(process.env.PORT || 5177);
 const pythonBin = process.env.PYTHON_BIN || "python3";
 const transcribePython = process.env.TRANSCRIBE_PYTHON || pythonBin;
 const transcribeCacheDir = process.env.TRANSCRIBE_CACHE_DIR || path.join(root, ".hf_transcribe");
-const transcribeModel = process.env.TRANSCRIBE_MODEL || "Systran/faster-whisper-small";
+const transcribeModel = process.env.TRANSCRIBE_MODEL || "Systran/faster-whisper-tiny";
 
 loadDotEnv();
 
@@ -18,6 +18,9 @@ const uploadDir = path.join(root, "uploads");
 fs.mkdirSync(dataDir, { recursive: true });
 fs.mkdirSync(uploadDir, { recursive: true });
 runDb("init", {});
+
+const jobs = new Map();
+const JOB_TTL_MS = 60 * 60 * 1000;
 
 const mime = {
   ".html": "text/html;charset=utf-8",
@@ -50,6 +53,34 @@ function send(res, status, body, type = "text/plain;charset=utf-8") {
 
 function sendJson(res, status, body) {
   send(res, status, JSON.stringify(body), "application/json;charset=utf-8");
+}
+
+function createJob() {
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const job = {
+    id,
+    status: "running",
+    progress: 5,
+    step: "已收到任务",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    result: null,
+    error: "",
+  };
+  jobs.set(id, job);
+  cleanupJobs();
+  return job;
+}
+
+function updateJob(job, patch) {
+  Object.assign(job, patch, { updatedAt: Date.now() });
+}
+
+function cleanupJobs() {
+  const now = Date.now();
+  for (const [id, job] of jobs.entries()) {
+    if (now - job.updatedAt > JOB_TTL_MS) jobs.delete(id);
+  }
 }
 
 function readBody(req) {
@@ -276,23 +307,27 @@ function parseJsonContent(content) {
   }
 }
 
-async function handleAnalyze(req, res) {
-  const raw = await readBody(req);
-  const payload = JSON.parse(raw || "{}");
+async function runAnalysis(payload, job) {
   const skill = getSkill(payload.skillName);
   const savedFiles = [];
   const ocrTexts = [];
 
   console.log(`[analyze] start skill=${skill.name} input=${payload.inputType} files=${(payload.files || []).length}`);
+  updateJob(job, { progress: 12, step: "正在保存素材" });
   for (const file of payload.files || []) {
     console.log(`[analyze] saving file name=${file.name} type=${file.type} size=${file.size}`);
     const saved = saveFile(file);
     savedFiles.push(saved);
+    updateJob(job, {
+      progress: isVideo(saved) ? 24 : 28,
+      step: isVideo(saved) ? "正在提取音频并转文字" : "正在识别截图文字",
+    });
     const extracted = extractTextFile(saved) || (await ocrImage(saved)) || transcribeVideo(saved);
     console.log(`[analyze] extracted chars=${extracted.length}`);
     ocrTexts.push(extracted);
   }
 
+  updateJob(job, { progress: 46, step: "正在整理提示词" });
   const prompt = buildPrompt({
     skill,
     inputType: payload.inputType || "作品",
@@ -302,8 +337,10 @@ async function handleAnalyze(req, res) {
   });
 
   console.log("[analyze] calling DeepSeek");
+  updateJob(job, { progress: 58, step: "正在调用 DeepSeek 分析" });
   const output = await callDeepSeek(prompt);
   console.log("[analyze] DeepSeek returned");
+  updateJob(job, { progress: 78, step: "正在写入本地备份" });
   const recordPayload = {
     analysis_type: skill.analysisType,
     input_type: payload.inputType || "作品",
@@ -321,6 +358,7 @@ async function handleAnalyze(req, res) {
   let feishuError = "";
 
   try {
+    updateJob(job, { progress: 88, step: "正在写入飞书多维表格" });
     feishuRecord = await writeAnalysisToFeishu({
       ...recordPayload,
       local_id: record.id,
@@ -330,7 +368,40 @@ async function handleAnalyze(req, res) {
     console.error("[analyze] feishu write failed", error);
   }
 
-  sendJson(res, 200, { id: record.id, analysisType: skill.analysisType, feishuRecord, feishuError, output });
+  return { id: record.id, analysisType: skill.analysisType, feishuRecord, feishuError, output };
+}
+
+async function handleAnalyze(req, res) {
+  const raw = await readBody(req);
+  const payload = JSON.parse(raw || "{}");
+  const job = createJob();
+
+  sendJson(res, 202, {
+    jobId: job.id,
+    status: job.status,
+    progress: job.progress,
+    step: job.step,
+  });
+
+  setImmediate(async () => {
+    try {
+      const result = await runAnalysis(payload, job);
+      updateJob(job, {
+        status: "done",
+        progress: 100,
+        step: result.feishuError ? "分析完成，飞书写入失败，本地已备份" : "分析完成，已写入飞书",
+        result,
+      });
+    } catch (error) {
+      console.error("[analyze] job failed", error);
+      updateJob(job, {
+        status: "error",
+        progress: 100,
+        step: "提交失败",
+        error: error.message || "服务器错误",
+      });
+    }
+  });
 }
 
 function inferTitle(output, analysisType) {
@@ -377,6 +448,17 @@ async function route(req, res) {
 
     if (req.method === "GET" && req.url === "/api/records") {
       sendJson(res, 200, runDb("list", {}));
+      return;
+    }
+
+    const jobMatch = req.method === "GET" && req.url.match(/^\/api\/jobs\/([^/]+)/);
+    if (jobMatch) {
+      const job = jobs.get(jobMatch[1]);
+      if (!job) {
+        sendJson(res, 404, { error: "任务不存在或已过期" });
+        return;
+      }
+      sendJson(res, 200, job);
       return;
     }
 

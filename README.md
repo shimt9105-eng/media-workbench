@@ -40,7 +40,7 @@ http://localhost:5177
 
 - 文字输入：粘贴文字。
 - 图片输入：复制截图后 Cmd+V 粘贴，并用 `tesseract.js` 做本地 OCR。
-- 视频输入：上传苹果录屏 `.mov`，使用 `ffmpeg` 提取音频，再用 `faster-whisper` 语音转文字。
+- 视频输入：上传苹果录屏 `.mov`，使用 `ffmpeg` 提取音频，再用 `faster-whisper-tiny` 语音转文字，优先保证速度。
 - Skill 选择：默认初始化了 `content-creation` 和 `user-pain-insight`，后续可在 `skills/` 目录继续维护并提交到 GitHub。
 - DeepSeek 分析：根据所选 skill 读取对应输出 schema，不同模式生成不同 JSON。
 - 飞书存储：结果写入飞书多维表格；本地 SQLite 只作为备份。
