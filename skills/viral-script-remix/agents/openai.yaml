@@ -1,0 +1,18 @@
+interface:
+  display_name: "爆款视频仿写脚本"
+  short_description: "拆解抖音视频和评论区，生成可改拍的仿写脚本。"
+  default_prompt: "分析我截取的抖音视频画面和评论区，拆解爆点、用户痛点和表达结构，生成可改拍的仿写脚本。"
+  analysis_type: "content_creation"
+  output_fields:
+    - key: "source_video_summary"
+      label: "1. 原视频主题与素材信息"
+    - key: "viral_breakdown"
+      label: "2. 爆点拆解"
+    - key: "comment_insights"
+      label: "3. 评论区用户洞察"
+    - key: "remix_angles"
+      label: "4. 可仿写角度"
+    - key: "shooting_script"
+      label: "5. 仿写拍摄脚本"
+    - key: "compliance_notes"
+      label: "6. 合规与改写提醒"

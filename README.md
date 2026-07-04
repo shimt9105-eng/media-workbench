@@ -6,6 +6,7 @@
 
 - `content-creation`：内容创作分析，生成关键词、选题、视频拆解、平台脚本、营销风险扫描。
 - `user-pain-insight`：用户痛点分析，生成痛点原话、用户画像、昵称/平台建联线索。
+- `viral-script-remix`：爆款视频仿写脚本，适合抖音视频和评论区截图，生成可改拍脚本。
 
 ## 启动
 
@@ -27,13 +28,13 @@ FEISHU_APP_SECRET=飞书自建应用 app secret
 
 ```bash
 npm install
-./start.command
+PORT=5188 npm start
 ```
 
 打开：
 
 ```text
-http://localhost:5177
+http://localhost:5188
 ```
 
 ## 四个模块
@@ -44,6 +45,24 @@ http://localhost:5177
 - Skill 选择：默认初始化了 `content-creation` 和 `user-pain-insight`，后续可在 `skills/` 目录继续维护并提交到 GitHub。
 - DeepSeek 分析：根据所选 skill 读取对应输出 schema，不同模式生成不同 JSON。
 - 飞书存储：结果写入飞书多维表格；本地 SQLite 只作为备份。
+
+## 抖音客户端本地采集器
+
+如果你在电脑上看抖音客户端，可以用 `douyin_capture.command` 做半自动采集：
+
+1. 先启动工作台：
+
+```bash
+PORT=5188 npm start
+```
+
+2. 打开抖音客户端，停在要分析的视频画面。
+3. 双击项目根目录里的 `douyin_capture.command`。
+4. 按提示框选视频主体、字幕或标题区域。
+5. 继续框选 1 张或多张评论区截图。
+6. 点击“完成并分析”，脚本会自动提交到 `爆款视频仿写脚本` skill。
+
+采集器会把截图交给当前本地工作台，工作台负责 OCR、DeepSeek 分析、飞书写入和 SQLite 备份。
 
 ## 飞书多维表格
 
